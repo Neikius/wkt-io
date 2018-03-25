@@ -26,26 +26,55 @@ public class WKTWriter {
 	 * //returns "LINESTRING (30 10, 10 30, 40 40)"
 	 * </code></pre>
 	 */
-	public String write(Geometry geom) {
-	  String rval = "";
-	  if (geom instanceof LineString) {
-	    LineString lineString = (LineString) geom;
-	    rval += "LINESTRING ";
-	    if (lineString.isEmpty()) {
-	      rval += "EMPTY";
-      } else {
-	      rval += "(";
-        for (int i = 0; i < lineString.getNumCoords(); i++) {
-          rval += (int) lineString.getX(i) + " " + (int) lineString.getY(i) ;
-          if (i < lineString.getNumCoords() - 1) {
-            rval += ", ";
-          }
+  public String write(Geometry geom) {
+    String rval = "";
+    if (geom instanceof LineString) {
+      rval += outputLineString((LineString) geom);
+    } else if (geom instanceof Point) {
+      rval += outputPoint((Point) geom);
+    } else if (geom instanceof GeometryCollection) {
+      GeometryCollection<Geometry> geometryCollection = (GeometryCollection) geom;
+      rval += "GEOMETRYCOLLECTION (";
+      for (Iterator<Geometry> it = geometryCollection.iterator(); it.hasNext(); ) {
+        Geometry innerGeometry = it.next();
+        rval += write (innerGeometry);
+        if (it.hasNext()) {
+          rval += ", ";
         }
-        rval += ")";
       }
+      rval += ")";
     }
 
     return rval;
-	}
+  }
 
+  private String outputPoint(Point point) {
+    return "POINT (" + string (point.getX() ) + " " + string ( point.getY() ) + ")";
+  }
+
+  private String outputLineString(LineString lineString) {
+    String repr = "";
+    repr += "LINESTRING ";
+    if (lineString.isEmpty()) {
+      repr += "EMPTY";
+    } else {
+      repr += "(";
+      for (int i = 0; i < lineString.getNumCoords(); i++) {
+        repr += string( lineString.getX(i) ) + " " + string ( lineString.getY(i) );
+        if (i < lineString.getNumCoords() - 1) {
+          repr += ", ";
+        }
+      }
+      repr += ")";
+    }
+    return repr;
+  }
+
+  private String string(Double number) {
+    if (Double.isFinite(number) && Double.compare(number, StrictMath.rint(number)) == 0) {
+      return "" + number.longValue();
+    } else {
+      return number.toString();
+    }
+  }
 }
