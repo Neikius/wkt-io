@@ -1,9 +1,6 @@
 package com.wahkahtah;
 
-import com.sinergise.geometry.Geometry;
-import com.sinergise.geometry.GeometryCollection;
-import com.sinergise.geometry.LineString;
-import com.sinergise.geometry.Point;
+import com.sinergise.geometry.*;
 
 import java.util.Iterator;
 
@@ -29,9 +26,20 @@ public class WKTWriter {
   public String write(Geometry geom) {
     String rval = "";
     if (geom instanceof LineString) {
-      rval += outputLineString((LineString) geom);
+      rval += outputLineStringWithLabel((LineString) geom);
     } else if (geom instanceof Point) {
-      rval += outputPoint((Point) geom);
+      rval += outputPointWithLabel((Point) geom);
+    } else if (geom instanceof MultiLineString) {
+      MultiLineString multiLineString = (MultiLineString) geom;
+      rval += "MULTILINESTRING (";
+      for (Iterator<LineString> it = multiLineString.iterator(); it.hasNext(); ) {
+        LineString lineString = it.next();
+        rval += outputLineString(lineString);
+        if (it.hasNext()) {
+          rval += ",\n";
+        }
+      }
+      rval += ")";
     } else if (geom instanceof GeometryCollection) {
       GeometryCollection<Geometry> geometryCollection = (GeometryCollection) geom;
       rval += "GEOMETRYCOLLECTION (";
@@ -43,30 +51,54 @@ public class WKTWriter {
         }
       }
       rval += ")";
+    } else if (geom instanceof Polygon) {
+      Polygon polygon = (Polygon) geom;
+      rval += "POLYGON (";
+      LineString outer = polygon.getOuter();
+      rval += outputLineString(outer);
+      for (int i=0; i < polygon.getNumHoles(); i++) {
+        LineString hole = polygon.getHole(i);
+        rval += polygon.getHole(i);
+      }
+      rval += ")";
     }
 
     return rval;
   }
 
-  private String outputPoint(Point point) {
-    return "POINT (" + string (point.getX() ) + " " + string ( point.getY() ) + ")";
+  private String outputPoint(double x, double y) {
+    return string (x) + " " + string (y);
+  }
+
+  private String outputPointWithLabel(Point point) {
+    if (point.isEmpty()) {
+      return "POINT EMPTY";
+    } else {
+      return "POINT (" + outputPoint(point.getX(), point.getY()) + ")";
+    }
   }
 
   private String outputLineString(LineString lineString) {
     String repr = "";
-    repr += "LINESTRING ";
     if (lineString.isEmpty()) {
       repr += "EMPTY";
     } else {
       repr += "(";
       for (int i = 0; i < lineString.getNumCoords(); i++) {
-        repr += string( lineString.getX(i) ) + " " + string ( lineString.getY(i) );
+        repr += outputPoint(lineString.getX(i), lineString.getY(i));
         if (i < lineString.getNumCoords() - 1) {
           repr += ", ";
         }
       }
       repr += ")";
     }
+    return repr;
+  }
+
+  private String outputLineStringWithLabel(LineString lineString) {
+    String repr = "";
+    repr += "LINESTRING ";
+    repr += outputLineString(lineString);
     return repr;
   }
 
