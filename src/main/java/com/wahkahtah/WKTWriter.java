@@ -3,6 +3,11 @@ package com.wahkahtah;
 import com.sinergise.geometry.*;
 
 import java.util.Iterator;
+import java.util.Spliterator;
+import java.util.Spliterators;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 public class WKTWriter {
 
@@ -26,44 +31,111 @@ public class WKTWriter {
   public String write(Geometry geom) {
     String rval = "";
     if (geom instanceof LineString) {
-      rval += outputLineStringWithLabel((LineString) geom);
+      rval += "LINESTRING ";
+      rval += outputLineString((LineString) geom);
     } else if (geom instanceof Point) {
       rval += outputPointWithLabel((Point) geom);
     } else if (geom instanceof MultiLineString) {
-      MultiLineString multiLineString = (MultiLineString) geom;
-      rval += "MULTILINESTRING (";
-      for (Iterator<LineString> it = multiLineString.iterator(); it.hasNext(); ) {
-        LineString lineString = it.next();
-        rval += outputLineString(lineString);
-        if (it.hasNext()) {
-          rval += ",\n";
-        }
-      }
-      rval += ")";
-    } else if (geom instanceof GeometryCollection) {
-      GeometryCollection<Geometry> geometryCollection = (GeometryCollection) geom;
-      rval += "GEOMETRYCOLLECTION (";
-      for (Iterator<Geometry> it = geometryCollection.iterator(); it.hasNext(); ) {
-        Geometry innerGeometry = it.next();
-        rval += write (innerGeometry);
-        if (it.hasNext()) {
-          rval += ", ";
-        }
-      }
-      rval += ")";
+      rval += "MULTILINESTRING ";
+      if (geom.isEmpty())
+        rval += "EMPTY";
+      else
+      rval += "(" + outputMultiLineString((MultiLineString) geom) + ")";
+    } else if (geom instanceof MultiPoint) {
+      rval += "MULTIPOINT ";
+      if (geom.isEmpty())
+        rval += "EMPTY";
+      else
+      rval += "(" + ouputMultiPoint((MultiPoint) geom) + ")";
     } else if (geom instanceof Polygon) {
-      Polygon polygon = (Polygon) geom;
-      rval += "POLYGON (";
-      LineString outer = polygon.getOuter();
-      rval += outputLineString(outer);
-      for (int i=0; i < polygon.getNumHoles(); i++) {
-        LineString hole = polygon.getHole(i);
-        rval += polygon.getHole(i);
-      }
-      rval += ")";
+      rval += "POLYGON ";
+      if (geom.isEmpty())
+        rval += "EMPTY";
+      else
+      rval += "(" + outputPolygon((Polygon) geom) + ")";
+    } else if (geom instanceof MultiPolygon) {
+      rval += "MULTIPOLYGON ";
+      if (geom.isEmpty())
+        rval += "EMPTY";
+      else
+      rval += "(" + outputMultiPolygon((MultiPolygon) geom) + ")";
+    } else if (geom instanceof GeometryCollection) {
+      rval += "GEOMETRYCOLLECTION ";
+      if (geom.isEmpty())
+        rval += "EMPTY";
+      else
+      rval += "(" + outputGeometryCollection((GeometryCollection) geom) + ")";
     }
 
     return rval;
+  }
+
+  private String outputGeometryCollection(GeometryCollection<Geometry> geometryCollection) {
+    if (geometryCollection.size() == 0) {
+      return "EMPTY";
+    }
+    StringBuilder sb = new StringBuilder();
+    for (Iterator<Geometry> it = geometryCollection.iterator(); it.hasNext(); ) {
+      Geometry innerGeometry = it.next();
+      sb.append(write (innerGeometry));
+      if (it.hasNext()) {
+        sb.append(", ");
+      }
+    }
+    return sb.toString();
+  }
+
+  private String outputMultiPolygon(MultiPolygon multiPolygon) {
+    if (multiPolygon.size() == 0) {
+      return "EMPTY";
+    }
+    return iterator(multiPolygon.iterator())
+        .map(poly -> "(" + outputPolygon(poly) + ")")
+        .collect(Collectors.joining(",\n"));
+  }
+
+  private String ouputMultiPoint(MultiPoint multiPoint) {
+    if (multiPoint.size() == 0) {
+      return "EMPTY";
+    }
+    return iterator(multiPoint.iterator())
+        .map(point -> "(" + outputPoint(point.getX(), point.getY()) + ")")
+        .collect(Collectors.joining(", "));
+  }
+
+  private String outputMultiLineString(MultiLineString multiLineString) {
+    if (multiLineString.size() == 0) {
+      return "EMPTY";
+    }
+    String rval = "";
+    for (Iterator<LineString> it = multiLineString.iterator(); it.hasNext(); ) {
+      LineString lineString = it.next();
+      rval += outputLineString(lineString);
+      if (it.hasNext()) {
+        rval += ",\n";
+      }
+    }
+    return rval;
+  }
+
+  private String outputPolygon(Polygon polygon) {
+    String rval = "";
+    LineString outer = polygon.getOuter();
+    rval += outputLineString(outer);
+    for (int i=0; i < polygon.getNumHoles(); i++) {
+      LineString hole = polygon.getHole(i);
+      rval += ",\n";
+      rval += outputLineString(polygon.getHole(i));
+    }
+    return rval;
+  }
+
+  private String outputPoint(double[] point) {
+    if (point == null) {
+      return "EMPTY";
+    } else {
+      return outputPoint(point[0], point[1]);
+    }
   }
 
   private String outputPoint(double x, double y) {
@@ -95,18 +167,19 @@ public class WKTWriter {
     return repr;
   }
 
-  private String outputLineStringWithLabel(LineString lineString) {
-    String repr = "";
-    repr += "LINESTRING ";
-    repr += outputLineString(lineString);
-    return repr;
-  }
-
   private String string(Double number) {
     if (Double.isFinite(number) && Double.compare(number, StrictMath.rint(number)) == 0) {
       return "" + number.longValue();
     } else {
       return number.toString();
     }
+  }
+
+  public static <T> Stream<T> iterator(Iterator<T> iterator) {
+    return StreamSupport.stream(Spliterators.spliteratorUnknownSize(iterator, Spliterator.ORDERED), false);
+  }
+
+  public static <T> Stream<T> spliterator(Spliterator<T> spliterator) {
+    return StreamSupport.stream(spliterator, false);
   }
 }
