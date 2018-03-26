@@ -1,0 +1,11 @@
+package com.wahkahtah;
+
+public enum GeometryType {
+  POINT,
+  LINESTRING,
+  POLYGON,
+  GEOMETRYCOLLECTION,
+  MULTIPOINT,
+  MULTILINESTRING,
+  MULTIPOLYGON
+}
