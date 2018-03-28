@@ -33,7 +33,7 @@ public class WKTWriterTest {
 
   @Test
   public void pointDoubles() {
-    assertEquals("POINT (-5.5 1.23)", wktWriter.write(new Point(-5.5d, 1.23d)));
+    assertEquals("POINT (-5.5 1.23)", wktWriter.write(new Point(-5.5d, 1.23)));
   }
 
   @Test

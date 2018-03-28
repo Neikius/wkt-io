@@ -11,15 +11,7 @@ import java.util.stream.StreamSupport;
 
 public class WKTWriter {
 
-      /*
-		return write(
-				new GeometryCollection<Geometry>(
-				    new Geometry[]{
-				        new Point(4,6),
-                new LineString(new double[] {4,6,7,10})
-				    })
-    );
-    */
+  private static final String EMPTY = "EMPTY";
 
 	/**
 	 * Transforms the input Geometry object into WKT-formatted String. e.g.
@@ -31,50 +23,67 @@ public class WKTWriter {
   public String write(Geometry geom) {
     String rval = "";
     if (geom instanceof LineString) {
-      rval += "LINESTRING ";
+      rval += GeometryType.LINESTRING + " ";
       rval += outputLineString((LineString) geom);
+
     } else if (geom instanceof Point) {
       rval += outputPointWithLabel((Point) geom);
+
     } else if (geom instanceof MultiLineString) {
-      rval += "MULTILINESTRING ";
-      if (geom.isEmpty())
-        rval += "EMPTY";
-      else
-      rval += "(" + outputMultiLineString((MultiLineString) geom) + ")";
+      rval += GeometryType.MULTILINESTRING + " ";
+      if (geom.isEmpty()) {
+        rval += EMPTY;
+      } else {
+        rval += "(" + outputMultiLineString((MultiLineString) geom) + ")";
+      }
+
     } else if (geom instanceof MultiPoint) {
-      rval += "MULTIPOINT ";
-      if (geom.isEmpty())
-        rval += "EMPTY";
-      else
-      rval += "(" + ouputMultiPoint((MultiPoint) geom) + ")";
+      rval += GeometryType.MULTIPOINT + " ";
+      if (geom.isEmpty()) {
+        rval += EMPTY;
+      } else {
+        rval += "(" + outputMultiPoint((MultiPoint) geom) + ")";
+      }
+
     } else if (geom instanceof Polygon) {
-      rval += "POLYGON ";
-      if (geom.isEmpty())
-        rval += "EMPTY";
-      else
-      rval += "(" + outputPolygon((Polygon) geom) + ")";
+      rval += GeometryType.POLYGON + " ";
+      if (geom.isEmpty()) {
+        rval += EMPTY;
+      } else {
+        rval += "(" + outputPolygon((Polygon) geom) + ")";
+      }
+
     } else if (geom instanceof MultiPolygon) {
-      rval += "MULTIPOLYGON ";
-      if (geom.isEmpty())
-        rval += "EMPTY";
-      else
-      rval += "(" + outputMultiPolygon((MultiPolygon) geom) + ")";
+      rval += GeometryType.MULTIPOLYGON + " ";
+      if (geom.isEmpty()) {
+        rval += EMPTY;
+      } else {
+        rval += "(" + outputMultiPolygon((MultiPolygon) geom) + ")";
+      }
+
     } else if (geom instanceof GeometryCollection) {
-      rval += "GEOMETRYCOLLECTION ";
-      if (geom.isEmpty())
-        rval += "EMPTY";
-      else
-      rval += "(" + outputGeometryCollection((GeometryCollection) geom) + ")";
+      rval += GeometryType.GEOMETRYCOLLECTION + " ";
+      if (geom.isEmpty()) {
+        rval += EMPTY;
+      } else {
+        rval += outputGeometryCollection((GeometryCollection) geom);
+      }
+
     }
 
     return rval;
   }
 
+  /**
+   * Output the geometrycollection text
+   * @param geometryCollection
+   * @return
+   */
   private String outputGeometryCollection(GeometryCollection<Geometry> geometryCollection) {
     if (geometryCollection.size() == 0) {
-      return "EMPTY";
+      return EMPTY;
     }
-    StringBuilder sb = new StringBuilder();
+    StringBuilder sb = new StringBuilder("(");
     for (Iterator<Geometry> it = geometryCollection.iterator(); it.hasNext(); ) {
       Geometry innerGeometry = it.next();
       sb.append(write (innerGeometry));
@@ -82,104 +91,128 @@ public class WKTWriter {
         sb.append(", ");
       }
     }
+    sb.append(")");
     return sb.toString();
   }
 
+  /**
+   * Output the multipolygon text part inside parenthesis
+   * @param multiPolygon
+   * @return
+   */
   private String outputMultiPolygon(MultiPolygon multiPolygon) {
     if (multiPolygon.size() == 0) {
-      return "EMPTY";
+      return EMPTY;
     }
     return iterator(multiPolygon.iterator())
         .map(poly -> "(" + outputPolygon(poly) + ")")
         .collect(Collectors.joining(",\n"));
   }
 
-  private String ouputMultiPoint(MultiPoint multiPoint) {
+  /**
+   * Output the multipoint text part inside parenthesis
+   * @param multiPoint
+   * @return
+   */
+  private String outputMultiPoint(MultiPoint multiPoint) {
     if (multiPoint.size() == 0) {
-      return "EMPTY";
+      return EMPTY;
     }
     return iterator(multiPoint.iterator())
         .map(point -> "(" + outputPoint(point.getX(), point.getY()) + ")")
         .collect(Collectors.joining(", "));
   }
 
+  /**
+   * Output the multilinestring text part inside parenthesis
+   * @param multiLineString
+   * @return
+   */
   private String outputMultiLineString(MultiLineString multiLineString) {
     if (multiLineString.size() == 0) {
-      return "EMPTY";
+      return EMPTY;
     }
-    String rval = "";
+    StringBuilder sb = new StringBuilder();
     for (Iterator<LineString> it = multiLineString.iterator(); it.hasNext(); ) {
       LineString lineString = it.next();
-      rval += outputLineString(lineString);
+      sb.append( outputLineString(lineString) );
       if (it.hasNext()) {
-        rval += ",\n";
+        sb.append(",\n");
       }
     }
-    return rval;
+    return sb.toString();
   }
 
+  /**
+   * Output the polygon text part inside parenthesis
+   * @param polygon
+   * @return
+   */
   private String outputPolygon(Polygon polygon) {
-    String rval = "";
+    StringBuilder sb = new StringBuilder();
     LineString outer = polygon.getOuter();
-    rval += outputLineString(outer);
+    sb.append(outputLineString(outer));
     for (int i=0; i < polygon.getNumHoles(); i++) {
-      LineString hole = polygon.getHole(i);
-      rval += ",\n";
-      rval += outputLineString(polygon.getHole(i));
+      sb.append(",\n");
+      sb.append(outputLineString(polygon.getHole(i)));
     }
-    return rval;
+    return sb.toString();
   }
 
-  private String outputPoint(double[] point) {
-    if (point == null) {
-      return "EMPTY";
-    } else {
-      return outputPoint(point[0], point[1]);
-    }
-  }
-
+  /**
+   * output point
+   * @param x
+   * @param y
+   * @return
+   */
   private String outputPoint(double x, double y) {
     return string (x) + " " + string (y);
   }
 
+  /**
+   * Ouput the point text
+   * @param point
+   * @return
+   */
   private String outputPointWithLabel(Point point) {
     if (point.isEmpty()) {
-      return "POINT EMPTY";
-    } else {
-      return "POINT (" + outputPoint(point.getX(), point.getY()) + ")";
+      return GeometryType.POINT + " " + EMPTY;
     }
+    return GeometryType.POINT + " (" + outputPoint(point.getX(), point.getY()) + ")";
   }
 
+  /**
+   * Output the linestring text
+   * @param lineString
+   * @return
+   */
   private String outputLineString(LineString lineString) {
-    String repr = "";
     if (lineString.isEmpty()) {
-      repr += "EMPTY";
-    } else {
-      repr += "(";
-      for (int i = 0; i < lineString.getNumCoords(); i++) {
-        repr += outputPoint(lineString.getX(i), lineString.getY(i));
-        if (i < lineString.getNumCoords() - 1) {
-          repr += ", ";
-        }
-      }
-      repr += ")";
+      return EMPTY;
     }
-    return repr;
+    StringBuilder sb = new StringBuilder("(");
+    sb.append( outputPoint(lineString.getX(0), lineString.getY(0)) );
+    for (int i = 1; i < lineString.getNumCoords(); i++) {
+      sb.append(", ");
+      sb.append( outputPoint(lineString.getX(i), lineString.getY(i)) );
+    }
+    sb.append(")");
+    return sb.toString();
   }
 
+  /**
+   * Output the double number, will strip decimal comma when value is an integer
+   * @param number
+   * @return
+   */
   private String string(Double number) {
     if (Double.isFinite(number) && Double.compare(number, StrictMath.rint(number)) == 0) {
       return "" + number.longValue();
-    } else {
-      return number.toString();
     }
+    return number.toString();
   }
 
-  public static <T> Stream<T> iterator(Iterator<T> iterator) {
+  private static <T> Stream<T> iterator(Iterator<T> iterator) {
     return StreamSupport.stream(Spliterators.spliteratorUnknownSize(iterator, Spliterator.ORDERED), false);
-  }
-
-  public static <T> Stream<T> spliterator(Spliterator<T> spliterator) {
-    return StreamSupport.stream(spliterator, false);
   }
 }

@@ -5,6 +5,7 @@ import com.sinergise.geometry.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class WKTReaderTest {
@@ -33,13 +34,28 @@ public class WKTReaderTest {
 
   @Test
   public void pointDoubles() {
-    assertEquals(new Point(-5.5d, 1.23d), wktReader.read("POINT (-5.5 1.23)"));
+    assertEquals(new Point(-5.5d, 1230.0d), wktReader.read("POINT (-5.5 1.23E3)"));
   }
 
   @Test
   public void writeGeometryCollection() {
     assertEquals(new GeometryCollection<Geometry>(new Geometry[]{new Point(4,6), new LineString(new double[] {4,6,7,10})}),
         wktReader.read("GEOMETRYCOLLECTION (POINT (4 6), LINESTRING (4 6, 7 10))"));
+  }
+
+  @Test
+  public void writeGeometryCollection2() {
+    assertEquals(new GeometryCollection<Geometry>(new Geometry[]{
+            new Point(10, 10),
+            new Point(30, 30),
+            new LineString(new double[]{15, 15, 20, 20})
+      }),
+        wktReader.read("GeometryCollection\n" +
+            "(\n" +
+            "POINT (10 10),\n" +
+            "POINT (30 30),\n" +
+            "LINESTRING (15 15, 20 20)\n" +
+            ")\n"));
   }
 
   @Test
@@ -98,4 +114,5 @@ public class WKTReaderTest {
         wktReader.read("MULTIPOLYGON (((30 20, 10 40, 45 40, 30 20)),\n" +
             "((15 5, 40 10, 10 20, 5 10, 15 5)))"));
   }
+
 }
