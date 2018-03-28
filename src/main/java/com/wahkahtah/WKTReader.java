@@ -115,6 +115,7 @@ public class WKTReader {
   private Polygon createPolygon(String str) {
     String[] lineStrings = extractLineStrings(stripParen(str));
     LineString body = new LineString( extractPoints(lineStrings[0]) );
+
     LineString[] holes = null;
     if (lineStrings.length > 1) {
       holes = new LineString[lineStrings.length - 1];
@@ -122,6 +123,7 @@ public class WKTReader {
         holes[i-1] = new LineString( extractPoints(lineStrings[i]) );
       }
     }
+
     return new Polygon(body, holes);
   }
 

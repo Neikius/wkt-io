@@ -11,6 +11,8 @@
     <properties>
         <maven.compiler.target>1.8</maven.compiler.target>
         <maven.compiler.source>1.8</maven.compiler.source>
+        <junit.jupiter.version>5.1.0</junit.jupiter.version>
+        <junit.platform.version>1.1.0</junit.platform.version>
     </properties>
 
     <dependencies>
@@ -19,11 +21,19 @@
             <artifactId>geometry</artifactId>
             <scope>system</scope>
             <systemPath>${project.basedir}/lib/sg_geometry.jar</systemPath>
+            <version>1.0</version>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-api</artifactId>
-            <version>5.1.0</version>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <version>${junit.jupiter.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-runner</artifactId>
+            <version>${junit.platform.version}</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 

@@ -4,10 +4,12 @@ package com.wahkahtah;
 import com.sinergise.geometry.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.platform.runner.JUnitPlatform;
+import org.junit.runner.RunWith;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+@RunWith(JUnitPlatform.class)
 public class WKTReaderTest {
 
   private WKTReader wktReader;
@@ -18,17 +20,17 @@ public class WKTReaderTest {
   }
 
   @Test
-  public void writeLineString() {
+  public void readLineString() {
     assertEquals(new LineString(new double[]{30, 10, 10, 30, 40, 40}), wktReader.read("LINESTRING (30 10, 10 30, 40 40)"));
   }
 
   @Test
-  public void writeLineStringEmpty() {
+  public void readLineStringEmpty() {
     assertEquals(new LineString(), wktReader.read("LINESTRING EMPTY"));
   }
 
   @Test
-  public void writePoint() {
+  public void readPoint() {
     assertEquals(new Point(30, 10), wktReader.read("POINT (30 10)"));
   }
 
@@ -38,13 +40,13 @@ public class WKTReaderTest {
   }
 
   @Test
-  public void writeGeometryCollection() {
+  public void readGeometryCollection() {
     assertEquals(new GeometryCollection<Geometry>(new Geometry[]{new Point(4,6), new LineString(new double[] {4,6,7,10})}),
         wktReader.read("GEOMETRYCOLLECTION (POINT (4 6), LINESTRING (4 6, 7 10))"));
   }
 
   @Test
-  public void writeGeometryCollection2() {
+  public void readGeometryCollection2() {
     assertEquals(new GeometryCollection<Geometry>(new Geometry[]{
             new Point(10, 10),
             new Point(30, 30),
